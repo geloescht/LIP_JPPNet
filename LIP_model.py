@@ -8,7 +8,7 @@ from utils.ops import *
 ##  refine net version 4.   07.17
 
 def pose_net(image, name):
-  with tf.variable_scope(name) as scope:
+  with tf.compat.v1.variable_scope(name) as scope:
       is_BN = False
       pose_conv1 = conv2d(image, 512, 3, 1, relu=True, bn=is_BN, name='pose_conv1')
       pose_conv2 = conv2d(pose_conv1, 512, 3, 1, relu=True, bn=is_BN, name='pose_conv2')
@@ -24,7 +24,7 @@ def pose_net(image, name):
 
 
 def pose_refine(pose, parsing, pose_fea, name):
-  with tf.variable_scope(name) as scope:
+  with tf.compat.v1.variable_scope(name) as scope:
       is_BN = False
       # 1*1 convolution remaps the heatmaps to match the number of channels of the intermediate features.
       pose = conv2d(pose, 128, 1, 1, relu=True, bn=is_BN, name='pose_remap')
@@ -43,7 +43,7 @@ def pose_refine(pose, parsing, pose_fea, name):
 
 
 def parsing_refine(parsing, pose, parsing_fea, name):
-  with tf.variable_scope(name) as scope:
+  with tf.compat.v1.variable_scope(name) as scope:
       is_BN = False
       pose = conv2d(pose, 128, 1, 1, relu=True, bn=is_BN, name='pose_remap')
       parsing = conv2d(parsing, 128, 1, 1, relu=True, bn=is_BN, name='parsing_remap')

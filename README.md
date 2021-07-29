@@ -1,6 +1,10 @@
 ## Joint Body Parsing & Pose Estimation Network (JPPNet)
 Xiaodan Liang, Ke Gong, Xiaohui Shen, and Liang Lin, "Look into Person: Joint Body Parsing & Pose Estimation Network and A New Benchmark", T-PAMI 2018.
 
+### Note
+
+This is a version of the original repository ported to Tensoflow v2. Only inference has been tested, training might not be functional.
+
 ### Introduction
 
 JPPNet is a state-of-art deep learning methord for human parsing and pose estimation built on top of [Tensorflow](http://www.tensorflow.org).

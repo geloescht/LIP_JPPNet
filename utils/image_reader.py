@@ -15,13 +15,13 @@ def image_scaling(img, label):
       label: Segmentation mask to scale.
     """
     
-    scale = tf.random_uniform([1], minval=0.5, maxval=1.5, dtype=tf.float32, seed=None)
-    h_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[0]), scale))
-    w_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[1]), scale))
-    new_shape = tf.squeeze(tf.stack([h_new, w_new]), squeeze_dims=[1])
-    img = tf.image.resize_images(img, new_shape)
-    label = tf.image.resize_nearest_neighbor(tf.expand_dims(label, 0), new_shape)
-    label = tf.squeeze(label, squeeze_dims=[0])
+    scale = tf.random.uniform([1], minval=0.5, maxval=1.5, dtype=tf.float32, seed=None)
+    h_new = tf.cast(tf.multiply(tf.cast(tf.shape(input=img)[0], dtype=tf.float32), scale), dtype=tf.int32)
+    w_new = tf.cast(tf.multiply(tf.cast(tf.shape(input=img)[1], dtype=tf.float32), scale), dtype=tf.int32)
+    new_shape = tf.squeeze(tf.stack([h_new, w_new]), axis=[1])
+    img = tf.image.resize(img, new_shape)
+    label = tf.image.resize(tf.expand_dims(label, 0), new_shape, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    label = tf.squeeze(label, axis=[0])
    
     return img, label
 
@@ -34,7 +34,7 @@ def image_mirroring(img, label):
       label: Segmentation mask to mirror.
     """
     
-    distort_left_right_random = tf.random_uniform([1], 0, 1.0, dtype=tf.float32)[0]
+    distort_left_right_random = tf.random.uniform([1], 0, 1.0, dtype=tf.float32)[0]
     mirror = tf.less(tf.stack([1.0, distort_left_right_random, 1.0]), 0.5)
     img = tf.reverse(img, mirror)
     reversed_label = tf.reverse(label, mirror)
@@ -56,12 +56,12 @@ def random_crop_and_pad_image_and_labels(image, label, crop_h, crop_w, ignore_la
     label = tf.cast(label, dtype=tf.float32)
     label = label - ignore_label # Needs to be subtracted and later added due to 0 padding.
     combined = tf.concat([image, label], 2) 
-    image_shape = tf.shape(image)
+    image_shape = tf.shape(input=image)
     combined_pad = tf.image.pad_to_bounding_box(combined, 0, 0, tf.maximum(crop_h, image_shape[0]), tf.maximum(crop_w, image_shape[1]))
     
-    last_image_dim = tf.shape(image)[-1]
-    last_label_dim = tf.shape(label)[-1]
-    combined_crop = tf.random_crop(combined_pad, [crop_h,crop_w,4])
+    last_image_dim = tf.shape(input=image)[-1]
+    last_label_dim = tf.shape(input=label)[-1]
+    combined_crop = tf.image.random_crop(combined_pad, [crop_h,crop_w,4])
     img_crop = combined_crop[:, :, :last_image_dim]
     label_crop = combined_crop[:, :, last_image_dim:]
     label_crop = label_crop + ignore_label
@@ -108,7 +108,7 @@ def read_images_from_disk(input_queue, input_size, random_scale, random_mirror):
       Two tensors: the decoded image and its mask.
     """
 
-    img_contents = tf.read_file(input_queue[0])
+    img_contents = tf.io.read_file(input_queue[0])
     
     img = tf.image.decode_jpeg(img_contents, channels=3)
     img_r, img_g, img_b = tf.split(value=img, num_or_size_splits=3, axis=2)
@@ -141,8 +141,8 @@ class ImageReader(object):
         self.coord = coord
 
         self.image_list = read_labeled_image_list(self.data_dir, self.data_list)
-        self.images = tf.convert_to_tensor(self.image_list, dtype=tf.string)
-        self.queue = tf.train.slice_input_producer([self.images],
+        self.images = tf.convert_to_tensor(value=self.image_list, dtype=tf.string)
+        self.queue = tf.compat.v1.train.slice_input_producer([self.images],
                                                    shuffle=input_size is not None) # not shuffling if it is val
         self.image = read_images_from_disk(self.queue, self.input_size, random_scale, random_mirror) 
 
@@ -154,6 +154,6 @@ class ImageReader(object):
           
         Returns:
           Two tensors of size (batch_size, h, w, {3, 1}) for images and masks.'''
-        image_batch, label_batch = tf.train.batch([self.image, self.label],
+        image_batch, label_batch = tf.compat.v1.train.batch([self.image, self.label],
                                                   num_elements)
         return image_batch, label_batch
